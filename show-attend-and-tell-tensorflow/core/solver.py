@@ -8,7 +8,7 @@ import cPickle as pickle
 from scipy import ndimage
 from utils import *
 from bleu import evaluate
-
+test
 
 class CaptioningSolver(object):
     def __init__(self, model, data, val_data, **kwargs):
@@ -101,7 +101,7 @@ class CaptioningSolver(object):
 
         #summary_op = tf.merge_all_summaries()
         summary_op = tf.summary.merge_all()
-
+        print "test"
         print "The number of epoch: %d" %self.n_epochs
         print "Data size: %d" %n_examples
         print "Batch size: %d" %self.batch_size
