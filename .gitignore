@@ -1,2 +1,4 @@
 
 *.jpg
+show-attend-and-tell-tensorflow/image/
+.DS_Store
