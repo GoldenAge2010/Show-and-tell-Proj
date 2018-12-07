@@ -11,9 +11,20 @@ import os
 import json
 
 
+def save_filenames(dirs):
+    res = []
+    for root, dirs, files in os.walk(dirs):
+        for name in files:
+            res.append(name)
+    return res
 def _process_caption_data(caption_file, image_dir, max_length):
     with open(caption_file) as f:
         caption_data = json.load(f)
+
+    # filter the caption_data object so that 
+    # only the image included will be preserved
+    exist_files = save_filenames(image_dir)
+    caption_data['images'] = [val for val in caption_data['images'] if val["file_name"] in exist_files]
 
     # id_to_filename is a dictionary such as {image_id: filename]} 
     id_to_filename = {image['id']: image['file_name'] for image in caption_data['images']}
