@@ -224,10 +224,3 @@ if __name__ == "__main__":
     main()
 
 
-import os 
-import random
-for root, dirs, files in os.walk('.'):
-    for name in files:
-        a = random.randint(0, 100)
-        if a < 25:
-            os.remove(name)
