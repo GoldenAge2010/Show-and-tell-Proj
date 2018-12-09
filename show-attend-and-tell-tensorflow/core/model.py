@@ -24,7 +24,7 @@ class CaptionGenerator(object):
             dim_feature: (optional) Dimension of vggnet19 conv5_3 feature vectors.
             dim_embed: (optional) Dimension of word embedding.
             dim_hidden: (optional) Dimension of all hidden state.
-            n_time_step: (optional) Time step size of LSTM.
+            n_time_step: (optional) Time step size of GRU.
             prev2out: (optional) previously generated word to hidden state. (see Eq (7) for explanation)
             ctx2out: (optional) context to hidden state (see Eq (7) for explanation)
             alpha_c: (optional) Doubly stochastic regularization coefficient. (see Section (4.2.1) for explanation)
@@ -56,8 +56,8 @@ class CaptionGenerator(object):
         self.features = tf.placeholder(tf.float32, [None, self.L, self.D])
         self.captions = tf.placeholder(tf.int32, [None, self.T + 1])
 
-    def _get_initial_lstm(self, features):
-        with tf.variable_scope('initial_lstm'):
+    def _get_initial_gru(self, features):
+        with tf.variable_scope('initial_gru'):
             features_mean = tf.reduce_mean(features, 1)
 
             w_h = tf.get_variable('w_h', [self.D, self.H], initializer=self.weight_initializer)
@@ -103,7 +103,7 @@ class CaptionGenerator(object):
             context = tf.multiply(beta, context, name='selected_context')
             return context, beta
 
-    def _decode_lstm(self, x, h, context, dropout=False, reuse=False):
+    def _decode_gru(self, x, h, context, dropout=False, reuse=False):
         with tf.variable_scope('logits', reuse=reuse):
             w_h = tf.get_variable('w_h', [self.H, self.M], initializer=self.weight_initializer)
             b_h = tf.get_variable('b_h', [self.M], initializer=self.const_initializer)
@@ -149,13 +149,13 @@ class CaptionGenerator(object):
         # batch normalize feature vectors
         features = self._batch_norm(features, mode='train', name='conv_features')
 
-        c, h = self._get_initial_lstm(features=features)
+        c, h = self._get_initial_gru(features=features)
         x = self._word_embedding(inputs=captions_in)
         features_proj = self._project_features(features=features)
 
         loss = 0.0
         alpha_list = []
-        lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=self.H)
+        gru_cell = tf.nn.rnn_cell.GRUCell(num_units=self.H)
 
         for t in range(self.T):
             context, alpha = self._attention_layer(features, features_proj, h, reuse=(t!=0))
@@ -164,10 +164,10 @@ class CaptionGenerator(object):
             if self.selector:
                 context, beta = self._selector(context, h, reuse=(t!=0))
 
-            with tf.variable_scope('lstm', reuse=(t!=0)):
-                _, (c, h) = lstm_cell(inputs=tf.concat( [x[:,t,:], context],1), state=[c, h])
+            with tf.variable_scope('gru', reuse=(t!=0)):
+                _, (c, h) = gru_cell(inputs=tf.concat( [x[:,t,:], context],1), state=[c, h])
 
-            logits = self._decode_lstm(x[:,t,:], h, context, dropout=self.dropout, reuse=(t!=0))
+            logits = self._decode_gru(x[:,t,:], h, context, dropout=self.dropout, reuse=(t!=0))
 
             loss += tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=captions_out[:, t],logits=logits)*mask[:, t] )
 
@@ -185,13 +185,13 @@ class CaptionGenerator(object):
         # batch normalize feature vectors
         features = self._batch_norm(features, mode='test', name='conv_features')
 
-        c, h = self._get_initial_lstm(features=features)
+        c, h = self._get_initial_gru(features=features)
         features_proj = self._project_features(features=features)
 
         sampled_word_list = []
         alpha_list = []
         beta_list = []
-        lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units=self.H)
+        gru_cell = tf.nn.rnn_cell.GRUCell(num_units=self.H)
 
         for t in range(max_len):
             if t == 0:
@@ -206,10 +206,10 @@ class CaptionGenerator(object):
                 context, beta = self._selector(context, h, reuse=(t!=0))
                 beta_list.append(beta)
 
-            with tf.variable_scope('lstm', reuse=(t!=0)):
-                _, (c, h) = lstm_cell(inputs=tf.concat( [x, context],1), state=[c, h])
+            with tf.variable_scope('gru', reuse=(t!=0)):
+                _, (c, h) = gru_cell(inputs=tf.concat( [x, context],1), state=[c, h])
 
-            logits = self._decode_lstm(x, h, context, reuse=(t!=0))
+            logits = self._decode_gru(x, h, context, reuse=(t!=0))
             sampled_word = tf.argmax(logits, 1)
             sampled_word_list.append(sampled_word)
 
