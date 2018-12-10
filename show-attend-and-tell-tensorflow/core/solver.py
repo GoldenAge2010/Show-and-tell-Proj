@@ -1,5 +1,6 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import skimage.transform
 import numpy as np
 import time
@@ -47,7 +48,7 @@ class CaptioningSolver(object):
         self.log_path = kwargs.pop('log_path', './log/')
         self.model_path = kwargs.pop('model_path', './model/')
         self.pretrained_model = kwargs.pop('pretrained_model', None)
-        self.test_model = kwargs.pop('test_model', './model/lstm/model-1')
+        self.test_model = kwargs.pop('test_model', './model/gru/model-1')
 
         # set an optimizer by update rule
         if self.update_rule == 'adam':
