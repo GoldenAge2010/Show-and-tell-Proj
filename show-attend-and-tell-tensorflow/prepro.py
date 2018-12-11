@@ -10,6 +10,12 @@ import hickle
 import os
 import json
 
+def save_filenames(dirs):
+        res = []
+        for root, dirs, files in os.walk(dirs):
+            for name in files:
+                res.append(name)
+        return res
 
 def _process_caption_data(caption_file, image_dir, max_length):
     with open(caption_file) as f:
@@ -17,6 +23,15 @@ def _process_caption_data(caption_file, image_dir, max_length):
 
     # id_to_filename is a dictionary such as {image_id: filename]} 
     id_to_filename = {image['id']: image['file_name'] for image in caption_data['images']}
+
+    # filter the caption_data object so that 
+    # only the image included will be preserved
+    exist_files = save_filenames(image_dir) # exits_files: list # contains all image names in the specfic folder
+    caption_data['images'] = [val for val in caption_data['images'] if val["file_name"] in exist_files]
+    id_array = [val['id'] for val in caption_data['images']]
+    caption_data['annotations'] = [val for val in caption_data['annotations'] if val['image_id'] in id_array]
+    print len(caption_data['images'])
+    print len(caption_data['annotations'])
 
     # data is a list of dictionary which contains 'captions', 'file_name' and 'image_id' as key.
     data = []
